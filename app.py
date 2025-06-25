@@ -17,14 +17,26 @@ def download_audio():
     if not os.path.exists(output_path):
         try:
             # Baixa apenas o áudio em MP3
-            subprocess.run([
-                "yt-dlp",
-                "-f", "bestaudio",
-                "--extract-audio",
-                "--audio-format", "mp3",
-                "-o", output_path,
-                url
-            ], check=True)
+           result = subprocess.run(
+    [
+        "yt-dlp",
+        "-f", "bestaudio",
+        "--extract-audio",
+        "--audio-format", "mp3",
+        "-o", output_path,
+        url
+    ],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True
+)
+
+if result.returncode != 0:
+    return jsonify({
+        "error": "Erro ao baixar áudio",
+        "details": result.stderr.strip()
+    }), 500
+
         except subprocess.CalledProcessError as e:
             return jsonify({"error": f"Erro ao baixar áudio: {str(e)}"}), 500
 
