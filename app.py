@@ -47,3 +47,21 @@ def transcript():
         lines = []
         with open(output_path, "r") as f:
             for line in f:
+                if "-->" in line or line.strip() == "" or line.strip().isdigit():
+                    continue
+                lines.append(line.strip())
+
+        transcript_text = " ".join(lines)
+        return jsonify({
+            "video_id": video_id,
+            "lang": lang,
+            "transcript": transcript_text
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
