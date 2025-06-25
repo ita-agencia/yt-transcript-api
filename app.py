@@ -1,6 +1,6 @@
-import os
-import subprocess
 from flask import Flask, request, jsonify
+import subprocess
+import os
 
 app = Flask(__name__)
 
@@ -15,7 +15,6 @@ def transcript():
     output_path = os.path.join(output_dir, f"{video_id}.en.vtt")
 
     try:
-        # Baixa a legenda automática com yt-dlp
         subprocess.run([
             "yt-dlp",
             "--write-auto-sub",
@@ -25,10 +24,10 @@ def transcript():
             url
         ], check=True)
 
-        # Converte o .vtt para texto limpo
         if not os.path.exists(output_path):
             return jsonify({"error": "Legenda não encontrada"}), 404
 
+        # Converte .vtt em texto limpo
         lines = []
         with open(output_path, "r") as f:
             for line in f:
