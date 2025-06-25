@@ -1,63 +1,36 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, send_file, jsonify
 import subprocess
 import os
 
 app = Flask(__name__)
 
-@app.route("/transcript")
-def transcript():
+@app.route("/audio")
+def download_audio():
     video_id = request.args.get("video_id")
-    lang = request.args.get("lang", "en")  # idioma opcional (default: inglês)
-
     if not video_id:
         return jsonify({"error": "Missing video_id"}), 400
 
     url = f"https://www.youtube.com/watch?v={video_id}"
-    output_dir = "/tmp"
-    output_path = os.path.join(output_dir, f"{video_id}.{lang}.vtt")
-    output_template = os.path.join(output_dir, f"{video_id}.%(ext)s")
+    output_path = f"/tmp/{video_id}.mp3"
 
-    try:
-        # Executa yt-dlp para baixar legenda automática
-        result = subprocess.run(
-            [
+    # Se o arquivo já existe, não baixa novamente
+    if not os.path.exists(output_path):
+        try:
+            # Baixa apenas o áudio em MP3
+            subprocess.run([
                 "yt-dlp",
-                "--write-auto-sub",
-                "--sub-lang", lang,
-                "--skip-download",
-                "-o", output_template,
+                "-f", "bestaudio",
+                "--extract-audio",
+                "--audio-format", "mp3",
+                "-o", output_path,
                 url
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False
-        )
+            ], check=True)
+        except subprocess.CalledProcessError as e:
+            return jsonify({"error": f"Erro ao baixar áudio: {str(e)}"}), 500
 
-        if result.returncode != 0:
-            return jsonify({
-                "error": "Erro ao rodar yt-dlp",
-                "details": result.stderr.strip()
-            }), 500
-
-        if not os.path.exists(output_path):
-            return jsonify({"error": f"Legenda '{lang}' não encontrada para este vídeo."}), 404
-
-        # Converte o arquivo .vtt para texto limpo
-        lines = []
-        with open(output_path, "r") as f:
-            for line in f:
-                if "-->" in line or line.strip() == "" or line.strip().isdigit():
-                    continue
-                lines.append(line.strip())
-
-        transcript_text = " ".join(lines)
-        return jsonify({
-            "video_id": video_id,
-            "lang": lang,
-            "transcript": transcript_text
-        })
-
+    # Retorna o arquivo de áudio como resposta
+    try:
+        return send_file(output_path, mimetype="audio/mpeg")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
