@@ -1,2 +1,2 @@
-Flask
-youtube-transcript-api
+flask
+yt-dlp
